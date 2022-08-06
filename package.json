@@ -1,6 +1,6 @@
 {
 	"name": "scrollreveal",
-	"version": "4.0.5",
+	"version": "4.0.9",
 	"description": "Animate elements as they scroll into view",
 	"homepage": "https://scrollrevealjs.org",
 	"main": "dist/scrollreveal.js",
@@ -34,10 +34,10 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/scrollreveal/scrollreveal.git"
+		"url": "https://github.com/jlmakes/scrollreveal.git"
 	},
 	"bugs": {
-		"url": "https://github.com/scrollreveal/scrollreveal/issues"
+		"url": "https://github.com/jlmakes/scrollreveal/issues"
 	},
 	"dependencies": {
 		"miniraf": "1.0.0",

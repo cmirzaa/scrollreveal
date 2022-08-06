@@ -21,19 +21,11 @@
 	<a href="https://www.npmjs.com/package/scrollreveal">
 		<img src="https://img.shields.io/npm/v/scrollreveal.svg" alt="Version">
 	</a>
-	<img src="https://img.shields.io/badge/min+gzip-5.6_kB-blue.svg" alt="5.6 kB min+gzip">
+	<img src="https://img.shields.io/badge/min+gzip-5.7_kB-blue.svg" alt="5.7 kB min+gzip">
 	<a href="https://opensource.org/licenses/GPL-3.0">
 		<img src="https://img.shields.io/badge/license-GPLv3-blue.svg" alt="GPLv3 License">
 	</a>
 </p>
-
-<p align="center">
-	<a href="https://saucelabs.com/u/scrollreveal">
-		<img src="https://saucelabs.com/browser-matrix/scrollreveal.svg" alt="Browser compatibility matrix" width="100%">
-	</a>
-</p>
-
-<br>
 
 <br>
 
@@ -87,7 +79,7 @@ There’s a lot we can do with this instance, but most of the time we’ll be us
 
 ```html
 <h1 class="headline">
-    Widget Inc.
+	Widget Inc.
 </h1>
 ```
 
@@ -103,7 +95,7 @@ ScrollReveal().reveal('.headline')
 
 ### The full documentation can be found at [https://scrollrevealjs.org](https://scrollrevealjs.org)
 
-> If you’re using an older version of ScrollReveal, you can find legacy documentation in the [wiki](https://github.com/scrollreveal/scrollreveal/wiki)
+> If you’re using an older version of ScrollReveal, you can find legacy documentation in the [wiki](https://github.com/jlmakes/scrollreveal/wiki)
 
 ---
 
@@ -123,4 +115,4 @@ Licensed under the GNU General Public License 3.0 for compatible open source pro
 
 <br>
 
-Copyright 2018 Fisssion LLC
+Copyright 2021 Fisssion LLC

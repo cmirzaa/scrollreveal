@@ -1,6 +1,6 @@
 import {
-	parse,
 	multiply,
+	parse,
 	rotateX,
 	rotateY,
 	rotateZ,
@@ -8,7 +8,6 @@ import {
 	translateX,
 	translateY
 } from 'rematrix'
-
 import getPrefixedCssProp from '../../utils/get-prefixed-css-prop'
 
 export default function style(element) {
@@ -77,12 +76,12 @@ export default function style(element) {
 				 *
 				 * If that behavior ends up being unintuitive, this
 				 * logic could instead utilize `element.geometry.height`
-				 * and `element.geoemetry.width` for the distaince calculation
+				 * and `element.geoemetry.width` for the distance calculation
 				 */
 				distance =
 					axis === 'Y'
-						? element.node.getBoundingClientRect().height * value / 100
-						: element.node.getBoundingClientRect().width * value / 100
+						? (element.node.getBoundingClientRect().height * value) / 100
+						: (element.node.getBoundingClientRect().width * value) / 100
 				break
 			default:
 				throw new RangeError('Unrecognized or missing distance unit.')
@@ -137,9 +136,7 @@ export default function style(element) {
 
 		transform.generated = {
 			initial: `${transform.property}: matrix3d(${product.join(', ')});`,
-			final: `${transform.property}: matrix3d(${transform.computed.matrix.join(
-				', '
-			)});`
+			final: `${transform.property}: matrix3d(${transform.computed.matrix.join(', ')});`
 		}
 	} else {
 		transform.generated = {
@@ -168,17 +165,19 @@ export default function style(element) {
 
 		if (transform.generated.initial) {
 			transition.fragments.push({
-				delayed: `${transform.property} ${duration / 1000}s ${easing} ${delay /
-					1000}s`,
+				delayed: `${transform.property} ${duration / 1000}s ${easing} ${delay / 1000}s`,
 				instant: `${transform.property} ${duration / 1000}s ${easing} 0s`
 			})
 		}
 
 		/**
-		 * The default computed transition property should be one of:
-		 * undefined || '' || 'all 0s ease 0s' || 'all 0s 0s cubic-bezier()'
+		 * The default computed transition property should be undefined, or one of:
+		 * '' || 'none 0s ease 0s' || 'all 0s ease 0s' || 'all 0s 0s cubic-bezier()'
 		 */
-		if (transition.computed && !transition.computed.match(/all 0s/)) {
+		let hasCustomTransition =
+			transition.computed && !transition.computed.match(/all 0s|none 0s/)
+
+		if (hasCustomTransition) {
 			transition.fragments.unshift({
 				delayed: transition.computed,
 				instant: transition.computed
@@ -187,10 +186,8 @@ export default function style(element) {
 
 		const composed = transition.fragments.reduce(
 			(composition, fragment, i) => {
-				composition.delayed +=
-					i === 0 ? fragment.delayed : `, ${fragment.delayed}`
-				composition.instant +=
-					i === 0 ? fragment.instant : `, ${fragment.instant}`
+				composition.delayed += i === 0 ? fragment.delayed : `, ${fragment.delayed}`
+				composition.instant += i === 0 ? fragment.instant : `, ${fragment.instant}`
 				return composition
 			},
 			{
@@ -218,3 +215,20 @@ export default function style(element) {
 		transition
 	}
 }
+
+/**
+ * apply a CSS string to an element using the CSSOM (element.style) rather
+ * than setAttribute, which may violate the content security policy.
+ *
+ * @param {Node}   [el]  Element to receive styles.
+ * @param {string} [declaration] Styles to apply.
+ */
+export function applyStyle (el, declaration) {
+	declaration.split(';').forEach(pair => {
+		const [property, ...value] = pair.split(':')
+		if (property && value) {
+			el.style[property.trim()] = value.join(':')
+		}
+	})
+}
+

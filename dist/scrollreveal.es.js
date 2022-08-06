@@ -1,6 +1,6 @@
-/*! @license ScrollReveal v4.0.5
+/*! @license ScrollReveal v4.0.9
 
-	Copyright 2018 Fisssion LLC.
+	Copyright 2021 Fisssion LLC.
 
 	Licensed under the GNU General Public License 3.0 for
 	compatible open source projects and non-commercial use.
@@ -10,7 +10,7 @@
 	a commercial license from https://scrollrevealjs.org/
 */
 import $ from 'tealight';
-import { parse, multiply, rotateX, rotateY, rotateZ, scale, translateX, translateY } from 'rematrix';
+import { translateY, translateX, rotateX, rotateY, rotateZ, scale, parse, multiply } from 'rematrix';
 import raf from 'miniraf';
 
 var defaults = {
@@ -44,7 +44,7 @@ var defaults = {
 	afterReveal: function afterReveal() {},
 	beforeReset: function beforeReset() {},
 	beforeReveal: function beforeReveal() {}
-}
+};
 
 function failure() {
 	document.documentElement.classList.remove('sr');
@@ -72,7 +72,7 @@ function success() {
 	}
 }
 
-var mount = { success: success, failure: failure }
+var mount = { success: success, failure: failure };
 
 function isObject(x) {
 	return (
@@ -181,69 +181,6 @@ function rinse() {
 	each(sequenceIds.stale, function (staleId) { return delete this$1.store.sequences[staleId]; });
 }
 
-function clean(target) {
-	var this$1 = this;
-
-	var dirty;
-	try {
-		each($(target), function (node) {
-			var id = node.getAttribute('data-sr-id');
-			if (id !== null) {
-				dirty = true;
-				var element = this$1.store.elements[id];
-				if (element.callbackTimer) {
-					window.clearTimeout(element.callbackTimer.clock);
-				}
-				node.setAttribute('style', element.styles.inline.generated);
-				node.removeAttribute('data-sr-id');
-				delete this$1.store.elements[id];
-			}
-		});
-	} catch (e) {
-		return logger.call(this, 'Clean failed.', e.message)
-	}
-
-	if (dirty) {
-		try {
-			rinse.call(this);
-		} catch (e) {
-			return logger.call(this, 'Clean failed.', e.message)
-		}
-	}
-}
-
-function destroy() {
-	var this$1 = this;
-
-	/**
-	 * Remove all generated styles and element ids
-	 */
-	each(this.store.elements, function (element) {
-		element.node.setAttribute('style', element.styles.inline.generated);
-		element.node.removeAttribute('data-sr-id');
-	});
-
-	/**
-	 * Remove all event listeners.
-	 */
-	each(this.store.containers, function (container) {
-		var target =
-			container.node === document.documentElement ? window : container.node;
-		target.removeEventListener('scroll', this$1.delegate);
-		target.removeEventListener('resize', this$1.delegate);
-	});
-
-	/**
-	 * Clear all data from the store
-	 */
-	this.store = {
-		containers: {},
-		elements: {},
-		history: [],
-		sequences: {}
-	};
-}
-
 var getPrefixedCssProp = (function () {
 	var properties = {};
 	var style = document.documentElement.style;
@@ -339,12 +276,12 @@ function style(element) {
 				 *
 				 * If that behavior ends up being unintuitive, this
 				 * logic could instead utilize `element.geometry.height`
-				 * and `element.geoemetry.width` for the distaince calculation
+				 * and `element.geoemetry.width` for the distance calculation
 				 */
 				distance =
 					axis === 'Y'
-						? element.node.getBoundingClientRect().height * value / 100
-						: element.node.getBoundingClientRect().width * value / 100;
+						? (element.node.getBoundingClientRect().height * value) / 100
+						: (element.node.getBoundingClientRect().width * value) / 100;
 				break
 			default:
 				throw new RangeError('Unrecognized or missing distance unit.')
@@ -399,9 +336,7 @@ function style(element) {
 
 		transform.generated = {
 			initial: ((transform.property) + ": matrix3d(" + (product.join(', ')) + ");"),
-			final: ((transform.property) + ": matrix3d(" + (transform.computed.matrix.join(
-				', '
-			)) + ");")
+			final: ((transform.property) + ": matrix3d(" + (transform.computed.matrix.join(', ')) + ");")
 		};
 	} else {
 		transform.generated = {
@@ -432,17 +367,19 @@ function style(element) {
 
 		if (transform.generated.initial) {
 			transition.fragments.push({
-				delayed: ((transform.property) + " " + (duration / 1000) + "s " + easing + " " + (delay /
-					1000) + "s"),
+				delayed: ((transform.property) + " " + (duration / 1000) + "s " + easing + " " + (delay / 1000) + "s"),
 				instant: ((transform.property) + " " + (duration / 1000) + "s " + easing + " 0s")
 			});
 		}
 
 		/**
-		 * The default computed transition property should be one of:
-		 * undefined || '' || 'all 0s ease 0s' || 'all 0s 0s cubic-bezier()'
+		 * The default computed transition property should be undefined, or one of:
+		 * '' || 'none 0s ease 0s' || 'all 0s ease 0s' || 'all 0s 0s cubic-bezier()'
 		 */
-		if (transition.computed && !transition.computed.match(/all 0s/)) {
+		var hasCustomTransition =
+			transition.computed && !transition.computed.match(/all 0s|none 0s/);
+
+		if (hasCustomTransition) {
 			transition.fragments.unshift({
 				delayed: transition.computed,
 				instant: transition.computed
@@ -451,10 +388,8 @@ function style(element) {
 
 		var composed = transition.fragments.reduce(
 			function (composition, fragment, i) {
-				composition.delayed +=
-					i === 0 ? fragment.delayed : (", " + (fragment.delayed));
-				composition.instant +=
-					i === 0 ? fragment.instant : (", " + (fragment.instant));
+				composition.delayed += i === 0 ? fragment.delayed : (", " + (fragment.delayed));
+				composition.instant += i === 0 ? fragment.instant : (", " + (fragment.instant));
 				return composition
 			},
 			{
@@ -481,6 +416,163 @@ function style(element) {
 		transform: transform,
 		transition: transition
 	}
+}
+
+/**
+ * apply a CSS string to an element using the CSSOM (element.style) rather
+ * than setAttribute, which may violate the content security policy.
+ *
+ * @param {Node}   [el]  Element to receive styles.
+ * @param {string} [declaration] Styles to apply.
+ */
+function applyStyle (el, declaration) {
+	declaration.split(';').forEach(function (pair) {
+		var ref = pair.split(':');
+		var property = ref[0];
+		var value = ref.slice(1);
+		if (property && value) {
+			el.style[property.trim()] = value.join(':');
+		}
+	});
+}
+
+function clean(target) {
+	var this$1 = this;
+
+	var dirty;
+	try {
+		each($(target), function (node) {
+			var id = node.getAttribute('data-sr-id');
+			if (id !== null) {
+				dirty = true;
+				var element = this$1.store.elements[id];
+				if (element.callbackTimer) {
+					window.clearTimeout(element.callbackTimer.clock);
+				}
+				applyStyle(element.node, element.styles.inline.generated);
+				node.removeAttribute('data-sr-id');
+				delete this$1.store.elements[id];
+			}
+		});
+	} catch (e) {
+		return logger.call(this, 'Clean failed.', e.message)
+	}
+
+	if (dirty) {
+		try {
+			rinse.call(this);
+		} catch (e) {
+			return logger.call(this, 'Clean failed.', e.message)
+		}
+	}
+}
+
+function destroy() {
+	var this$1 = this;
+
+	/**
+	 * Remove all generated styles and element ids
+	 */
+	each(this.store.elements, function (element) {
+		applyStyle(element.node, element.styles.inline.generated);
+		element.node.removeAttribute('data-sr-id');
+	});
+
+	/**
+	 * Remove all event listeners.
+	 */
+	each(this.store.containers, function (container) {
+		var target =
+			container.node === document.documentElement ? window : container.node;
+		target.removeEventListener('scroll', this$1.delegate);
+		target.removeEventListener('resize', this$1.delegate);
+	});
+
+	/**
+	 * Clear all data from the store
+	 */
+	this.store = {
+		containers: {},
+		elements: {},
+		history: [],
+		sequences: {}
+	};
+}
+
+function deepAssign(target) {
+	var sources = [], len = arguments.length - 1;
+	while ( len-- > 0 ) sources[ len ] = arguments[ len + 1 ];
+
+	if (isObject(target)) {
+		each(sources, function (source) {
+			each(source, function (data, key) {
+				if (isObject(data)) {
+					if (!target[key] || !isObject(target[key])) {
+						target[key] = {};
+					}
+					deepAssign(target[key], data);
+				} else {
+					target[key] = data;
+				}
+			});
+		});
+		return target
+	} else {
+		throw new TypeError('Target must be an object literal.')
+	}
+}
+
+function isMobile(agent) {
+	if ( agent === void 0 ) agent = navigator.userAgent;
+
+	return /Android|iPhone|iPad|iPod/i.test(agent)
+}
+
+var nextUniqueId = (function () {
+	var uid = 0;
+	return function () { return uid++; }
+})();
+
+function initialize() {
+	var this$1 = this;
+
+	rinse.call(this);
+
+	each(this.store.elements, function (element) {
+		var styles = [element.styles.inline.generated];
+
+		if (element.visible) {
+			styles.push(element.styles.opacity.computed);
+			styles.push(element.styles.transform.generated.final);
+			element.revealed = true;
+		} else {
+			styles.push(element.styles.opacity.generated);
+			styles.push(element.styles.transform.generated.initial);
+			element.revealed = false;
+		}
+
+		applyStyle(element.node, styles.filter(function (s) { return s !== ''; }).join(' '));
+	});
+
+	each(this.store.containers, function (container) {
+		var target =
+			container.node === document.documentElement ? window : container.node;
+		target.addEventListener('scroll', this$1.delegate);
+		target.addEventListener('resize', this$1.delegate);
+	});
+
+	/**
+	 * Manually invoke delegate once to capture
+	 * element and container dimensions, container
+	 * scroll position, and trigger any valid reveals
+	 */
+	this.delegate();
+
+	/**
+	 * Wipe any existing `setTimeout` now
+	 * that initialization has completed.
+	 */
+	this.initTimeout = null;
 }
 
 function animate(element, force) {
@@ -516,7 +608,7 @@ function triggerReveal(element, delayed) {
 		styles.push(element.styles.transition.generated.instant);
 	}
 	element.revealed = element.seen = true;
-	element.node.setAttribute('style', styles.filter(function (s) { return s !== ''; }).join(' '));
+	applyStyle(element.node, styles.filter(function (s) { return s !== ''; }).join(' '));
 	registerCallbacks.call(this, element, delayed);
 }
 
@@ -528,7 +620,7 @@ function triggerReset(element) {
 		element.styles.transition.generated.instant
 	];
 	element.revealed = false;
-	element.node.setAttribute('style', styles.filter(function (s) { return s !== ''; }).join(' '));
+	applyStyle(element.node, styles.filter(function (s) { return s !== ''; }).join(' '));
 	registerCallbacks.call(this, element);
 }
 
@@ -566,11 +658,6 @@ function registerCallbacks(element, isDelayed) {
 		}, duration - elapsed)
 	};
 }
-
-var nextUniqueId = (function () {
-	var uid = 0;
-	return function () { return uid++; }
-})();
 
 function sequence(element, pristine) {
 	if ( pristine === void 0 ) pristine = this.pristine;
@@ -696,77 +783,6 @@ function cue(seq, i, direction, pristine) {
 	}, seq.interval);
 }
 
-function initialize() {
-	var this$1 = this;
-
-	rinse.call(this);
-
-	each(this.store.elements, function (element) {
-		var styles = [element.styles.inline.generated];
-
-		if (element.visible) {
-			styles.push(element.styles.opacity.computed);
-			styles.push(element.styles.transform.generated.final);
-			element.revealed = true;
-		} else {
-			styles.push(element.styles.opacity.generated);
-			styles.push(element.styles.transform.generated.initial);
-			element.revealed = false;
-		}
-
-		element.node.setAttribute('style', styles.filter(function (s) { return s !== ''; }).join(' '));
-	});
-
-	each(this.store.containers, function (container) {
-		var target =
-			container.node === document.documentElement ? window : container.node;
-		target.addEventListener('scroll', this$1.delegate);
-		target.addEventListener('resize', this$1.delegate);
-	});
-
-	/**
-	 * Manually invoke delegate once to capture
-	 * element and container dimensions, container
-	 * scroll position, and trigger any valid reveals
-	 */
-	this.delegate();
-
-	/**
-	 * Wipe any existing `setTimeout` now
-	 * that initialization has completed.
-	 */
-	this.initTimeout = null;
-}
-
-function isMobile(agent) {
-	if ( agent === void 0 ) agent = navigator.userAgent;
-
-	return /Android|iPhone|iPad|iPod/i.test(agent)
-}
-
-function deepAssign(target) {
-	var sources = [], len = arguments.length - 1;
-	while ( len-- > 0 ) sources[ len ] = arguments[ len + 1 ];
-
-	if (isObject(target)) {
-		each(sources, function (source) {
-			each(source, function (data, key) {
-				if (isObject(data)) {
-					if (!target[key] || !isObject(target[key])) {
-						target[key] = {};
-					}
-					deepAssign(target[key], data);
-				} else {
-					target[key] = data;
-				}
-			});
-		});
-		return target
-	} else {
-		throw new TypeError('Target must be an object literal.')
-	}
-}
-
 function reveal(target, options, syncing) {
 	var this$1 = this;
 	if ( options === void 0 ) options = {};
@@ -798,7 +814,7 @@ function reveal(target, options, syncing) {
 				 * from throwing off the new styles, the style tag
 				 * has to be reverted to its pre-reveal state.
 				 */
-				element.node.setAttribute('style', element.styles.inline.computed);
+				applyStyle(element.node, element.styles.inline.computed);
 			} else {
 				element.id = nextUniqueId();
 				element.node = elementNode;
@@ -928,7 +944,7 @@ function sync() {
 }
 
 var polyfill = function (x) { return (x > 0) - (x < 0) || +x; };
-var mathSign = Math.sign || polyfill
+var mathSign = Math.sign || polyfill;
 
 function getGeometry(target, isContainer) {
 	/**
@@ -1041,7 +1057,7 @@ function delegate(
 		 * evaluated (in the second loop below).
 		 */
 		each(elements, function (element) {
-			if (stale) {
+			if (stale || element.geometry === undefined) {
 				element.geometry = getGeometry.call(this$1, element);
 			}
 			element.visible = isElementVisible.call(this$1, element);
@@ -1059,17 +1075,17 @@ function delegate(
 	});
 }
 
-function transformSupported() {
+function isTransformSupported() {
 	var style = document.documentElement.style;
 	return 'transform' in style || 'WebkitTransform' in style
 }
 
-function transitionSupported() {
+function isTransitionSupported() {
 	var style = document.documentElement.style;
 	return 'transition' in style || 'WebkitTransition' in style
 }
 
-var version = "4.0.5";
+var version = "4.0.9";
 
 var boundDelegate;
 var boundDestroy;
@@ -1158,7 +1174,7 @@ function ScrollReveal(options) {
 	return instance ? instance : (instance = this)
 }
 
-ScrollReveal.isSupported = function () { return transformSupported() && transitionSupported(); };
+ScrollReveal.isSupported = function () { return isTransformSupported() && isTransitionSupported(); };
 
 Object.defineProperty(ScrollReveal, 'debug', {
 	get: function () { return debug || false; },
